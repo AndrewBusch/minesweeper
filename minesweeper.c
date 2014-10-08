@@ -4,6 +4,10 @@
 #include "stdlib.h"
 #include "stdio.h"
 
+#define rowSize 10
+#define columnSize 10
+#define numMines 5
+
 typedef struct{
 	char value;
 
@@ -11,19 +15,11 @@ typedef struct{
 	int column;
 } square;
 
-void printBoard( char board[10][10] );
+void printBoard( char **board );
 
 main() {
 
 	srand(time(NULL));
-
-
-	// minesweeper board
-	int rowSize = 10;
-	int columnSize = 10;
-	int numMines = 5;
-
-	int i,j; // iterators
 
 	/*
 	 * 'b' = bomb
@@ -31,16 +27,19 @@ main() {
 	 * 'e' = empty and unchecked
 	 * 'a' = activated during edge search
 	 */
-	char board[rowSize][columnSize];
+	char **board;
+
+	//board = malloc((char**) );
 
 	// fill out the minesweeper board
+	int i,j; // iterators
 	for(i = 0; i < rowSize; i++) {
 		for(j = 0; j < columnSize; j++) {
 			board[i][j] = 'e';
 		}
 	}
 
-	//place mines on board
+	// place mines on board
 	int r, c;
 	for(i=0; i<numMines; i++) {
 		r = rand()%rowSize;
@@ -56,13 +55,15 @@ main() {
 
 	printBoard(board);
 
+	// fill out adjacent mine values
+
 	printf("program ended correctly\n");
 }
 
-void printBoard( char board[10][10] ){
+void printBoard( char **board ){
 	int i, j;
-	for(i = 0; i < 10; i++) {
-		for(j = 0; j < 10; j++) {
+	for(i = 0; i < rowSize; i++) {
+		for(j = 0; j < columnSize; j++) {
 			printf("[%c] ", board[i][j]);
 		}
 		printf("\n");
