@@ -1,21 +1,20 @@
-/* basic back end for minesweeper */
+/**
+  * basic back end for minesweeper
+  */
 
+//#include "minesweeper.h"
 #include "time.h"
 #include "stdlib.h"
 #include "stdio.h"
 
 #define rowSize 10
 #define columnSize 10
-#define numMines 5
+#define numMines 20
 
-typedef struct{
-	char value;
-
-	int row;
-	int column;
-} square;
-
-void printBoard( char **board );
+void printBoard( char (*board)[columnSize] );
+void placeMines( char (*board)[columnSize] );
+void wipeBoard( char (*board)[columnSize] );
+void fillNumberValues( char (*board)[columnSize] );
 
 main() {
 
@@ -23,24 +22,39 @@ main() {
 
 	/*
 	 * 'b' = bomb
-	 * '1' through '8' = count of adjacent bombs
+	 * '0' through '8' = count of adjacent bombs
 	 * 'e' = empty and unchecked
 	 * 'a' = activated during edge search
 	 */
-	char **board;
+	char (*board)[columnSize] = malloc((sizeof *board) * rowSize);
 
-	//board = malloc((char**) );
+	wipeBoard(board); // fill out the minesweeper board
+	placeMines(board); // place mines on board
+	fillNumberValues(board);// fill adjacent mine values for inner board
+	printBoard(board); // view board
 
-	// fill out the minesweeper board
-	int i,j; // iterators
+	printf("program ended correctly\n");
+}
+
+/**
+  * print out current state of board
+  */
+void printBoard( char (*board)[columnSize] ) {
+	printf("current board:\n");
+	int i, j;
 	for(i = 0; i < rowSize; i++) {
 		for(j = 0; j < columnSize; j++) {
-			board[i][j] = 'e';
+			printf("[%c]", board[i][j]);
 		}
+		printf("\n");
 	}
+}
 
-	// place mines on board
-	int r, c;
+/**
+  * fill the board with randomly placed mines depending on the mine count
+  */
+void placeMines( char (*board)[columnSize] ) {
+	int r, c, i, j;
 	for(i=0; i<numMines; i++) {
 		r = rand()%rowSize;
 		c = rand()%columnSize;
@@ -52,20 +66,40 @@ main() {
 
 		board[r][c] = 'b';
 	}
-
-	printBoard(board);
-
-	// fill out adjacent mine values
-
-	printf("program ended correctly\n");
 }
 
-void printBoard( char **board ){
-	int i, j;
+/**
+  * reset the board by filling all squares with 'e'
+  */
+void wipeBoard( char (*board)[columnSize] ) {
+	int i,j;
 	for(i = 0; i < rowSize; i++) {
 		for(j = 0; j < columnSize; j++) {
-			printf("[%c] ", board[i][j]);
+			board[i][j] = 'e';
 		}
-		printf("\n");
+	}
+}
+
+/**
+  * fill the inside of the board with values based on adjacent bombs
+  */
+void fillInnerValues( char (*board)[columnSize] ) {
+	int i, j, k, l;
+	int count;
+	for(i = 1; i < rowSize-1; i++) {
+		for(j = 1; j < columnSize-1; j++) {
+			if( board[i][j] == 'e' ) {
+				count = 0;
+				if( board[i-1][j-1] == 'b' ) count++;
+				if( board[i][j-1]   == 'b' ) count++;
+				if( board[i+1][j-1] == 'b' ) count++;
+				if( board[i-1][j]   == 'b' ) count++;
+				if( board[i+1][j]   == 'b' ) count++;
+				if( board[i-1][j+1] == 'b' ) count++;
+				if( board[i][j+1]   == 'b' ) count++;
+				if( board[i+1][j+1] == 'b' ) count++;
+				board[i][j] = (char) (((int) '0') + count);
+			}
+		}
 	}
 }
