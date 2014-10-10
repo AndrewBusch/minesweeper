@@ -1,24 +1,13 @@
-/**
-  * basic back end for minesweeper
-  */
+/*
+ * basic back end for minesweeper
+ * Andrew Busch
+ */
 
-//#include "minesweeper.h"
-#include "time.h"
-#include "stdlib.h"
-#include "stdio.h"
-
-#define rowSize 10
-#define columnSize 10
-#define numMines 20
-
-void printBoard( char (*board)[columnSize] );
-void placeMines( char (*board)[columnSize] );
-void wipeBoard( char (*board)[columnSize] );
-void fillNumberValues( char (*board)[columnSize] );
+#include "minesweeper.h"
+#include "list.h"
 
 main() {
-
-	srand(time(NULL));
+	srand( time(NULL));
 
 	/*
 	 * 'b' = bomb
@@ -26,20 +15,18 @@ main() {
 	 * 'e' = empty and unchecked
 	 * 'a' = activated during edge search
 	 */
-	char (*board)[columnSize] = malloc((sizeof *board) * rowSize);
+	char (*board)[columnSize] = malloc( (sizeof *board)*rowSize);
 
-	wipeBoard(board); // fill out the minesweeper board
-	placeMines(board); // place mines on board
-	fillNumberValues(board);// fill adjacent mine values for inner board
-	printBoard(board); // view board
-
-	printf("program ended correctly\n");
+	wipeBoard(board);	// zero out the minesweeper board
+	placeMines(board);	// place mines on board
+	fillValues(board);	// fill adjacent mine values for entire board
+	printBoard(board);	// view board
 }
 
-/**
-  * print out current state of board
-  */
-void printBoard( char (*board)[columnSize] ) {
+/*
+ * print out current state of board
+ */
+void printBoard( char (*board)[columnSize]) {
 	printf("current board:\n");
 	int i, j;
 	for(i = 0; i < rowSize; i++) {
@@ -50,16 +37,15 @@ void printBoard( char (*board)[columnSize] ) {
 	}
 }
 
-/**
-  * fill the board with randomly placed mines depending on the mine count
-  */
-void placeMines( char (*board)[columnSize] ) {
-	int r, c, i, j;
+/*
+ * fill the board with randomly placed mines depending on the mine count
+ */
+void placeMines( char (*board)[columnSize]) {
+	int r, c, i;
 	for(i=0; i<numMines; i++) {
 		r = rand()%rowSize;
 		c = rand()%columnSize;
 
-		printf("mine at row %d, column %d\n", r, c);
 		// if the space is filled,
 		// subtract 1 to correct for number of mines placed
 		if(board [r][c] == 'b') i--;
@@ -71,7 +57,7 @@ void placeMines( char (*board)[columnSize] ) {
 /**
   * reset the board by filling all squares with 'e'
   */
-void wipeBoard( char (*board)[columnSize] ) {
+void wipeBoard( char (*board)[columnSize]) {
 	int i,j;
 	for(i = 0; i < rowSize; i++) {
 		for(j = 0; j < columnSize; j++) {
@@ -83,23 +69,113 @@ void wipeBoard( char (*board)[columnSize] ) {
 /**
   * fill the inside of the board with values based on adjacent bombs
   */
-void fillInnerValues( char (*board)[columnSize] ) {
-	int i, j, k, l;
-	int count;
-	for(i = 1; i < rowSize-1; i++) {
-		for(j = 1; j < columnSize-1; j++) {
-			if( board[i][j] == 'e' ) {
-				count = 0;
-				if( board[i-1][j-1] == 'b' ) count++;
-				if( board[i][j-1]   == 'b' ) count++;
-				if( board[i+1][j-1] == 'b' ) count++;
-				if( board[i-1][j]   == 'b' ) count++;
-				if( board[i+1][j]   == 'b' ) count++;
-				if( board[i-1][j+1] == 'b' ) count++;
-				if( board[i][j+1]   == 'b' ) count++;
-				if( board[i+1][j+1] == 'b' ) count++;
-				board[i][j] = (char) (((int) '0') + count);
+void fillValues( char (*board)[columnSize]) {
+	int i, j;
+	neighbor *list;
+	for(i = 0; i < rowSize; i++) {
+		for(j = 0; j < columnSize; j++) {
+			if( board[i][j] != 'b') {
+				list = NULL;
+				list = getNeighbors( board, i, j);
+				board[i][j] = (char) (((int) '0') + getBombCount(list));
 			}
 		}
+	}
+}
+
+/*
+ * return a linked list of the values of neighbors for a given point on the board
+ */
+neighbor* getNeighbors( char (*board)[columnSize], int row, int column) {
+
+	neighbor *list = NULL;
+	if( row < rowSize-1 && row > 0 && column < columnSize-1 && column > 0) {	// not on edge of board
+		list = addNeighbor( list, board[row-1][column-1] );
+		list = addNeighbor( list, board[row][column-1]   );
+		list = addNeighbor( list, board[row+1][column-1] );
+		list = addNeighbor( list, board[row-1][column]   );
+		list = addNeighbor( list, board[row+1][column]   );
+		list = addNeighbor( list, board[row-1][column+1] );
+		list = addNeighbor( list, board[row][column+1]   );
+		list = addNeighbor( list, board[row+1][column+1] );
+		return list;
+	}
+	if( row == 0 && column < columnSize-1 && column > 0) { 		// top of board
+		list = addNeighbor( list, board[row][column-1]   );
+		list = addNeighbor( list, board[row+1][column-1] );
+		list = addNeighbor( list, board[row+1][column]   );
+		list = addNeighbor( list, board[row][column+1]   );
+		list = addNeighbor( list, board[row+1][column+1] );
+		return list;
+	}
+	if( row == rowSize-1 && column < columnSize-1 && column > 0) { 	// bottom edge of board
+		list = addNeighbor( list, board[row-1][column-1] );
+		list = addNeighbor( list, board[row][column-1]   );
+		list = addNeighbor( list, board[row-1][column]   );
+		list = addNeighbor( list, board[row-1][column+1] );
+		list = addNeighbor( list, board[row][column+1]   );
+		return list;
+	}
+	if( row < rowSize-1 && row > 0 && column == 0) { 		// left edge of board
+		list = addNeighbor( list, board[row-1][column]   );
+		list = addNeighbor( list, board[row+1][column]   );
+		list = addNeighbor( list, board[row-1][column+1] );
+		list = addNeighbor( list, board[row][column+1]   );
+		list = addNeighbor( list, board[row+1][column+1] );
+		return list;
+	}
+	if( row < rowSize-1 && row > 0 && column == columnSize-1) { 	// right edge of board
+		list = addNeighbor( list, board[row-1][column-1] );
+		list = addNeighbor( list, board[row][column-1]   );
+		list = addNeighbor( list, board[row+1][column-1] );
+		list = addNeighbor( list, board[row-1][column]   );
+		list = addNeighbor( list, board[row+1][column]   );
+		return list;
+	}
+	if( row == 0 && column == 0) { 					// top left corner of board
+		list = addNeighbor( list, board[row+1][column]   );
+		list = addNeighbor( list, board[row][column+1]   );
+		list = addNeighbor( list, board[row+1][column+1] );
+		return list;
+	}
+	if( row == rowSize-1 && column == 0) { 				// bottom left corner of board
+		list = addNeighbor( list, board[row-1][column]   );
+		list = addNeighbor( list, board[row][column+1]   );
+		list = addNeighbor( list, board[row-1][column+1] );
+		return list;
+	}
+	if( row == 0 && column == columnSize-1) { 			// top right corner of board
+		list = addNeighbor( list, board[row+1][column]	);
+		list = addNeighbor( list, board[row+1][column-1]);
+		list = addNeighbor( list, board[row][column-1]	);
+		return list;
+	}
+	if( row == rowSize-1 && column == columnSize-1) { 		// bottom right corner of board
+		list = addNeighbor( list, board[row-1][column]	);
+		list = addNeighbor( list, board[row-1][column-1]);
+		list = addNeighbor( list, board[row][column-1]	);
+		return list;
+	}
+	return list;
+}
+
+/*
+ * takes a list of neighbors and returns the number of bombs that appear in the list
+ */
+int getBombCount( neighbor* neighbors) {
+	return countBombs(neighbors, 0);
+}
+
+/*
+ * recurses through list, counting bomb occurances
+ */
+int countBombs( neighbor* neighbors, int count) {
+	if( neighbors == NULL) {
+		return count;
+	} else {
+		if( neighbors->value == 'b') {
+			count++;
+		}
+		return countBombs(neighbors->next, count);
 	}
 }
