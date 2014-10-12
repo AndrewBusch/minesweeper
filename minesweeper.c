@@ -14,24 +14,26 @@ main() {
 	 * '0' through '8' = count of adjacent bombs
 	 * 'e' = empty and unchecked
 	 * 'a' = activated during edge search
+	 * 's' = selected by user
 	 */
-	char (*board)[columnSize] = malloc( (sizeof *board)*rowSize);
-
+	square (*board)[columnSize] = malloc( (sizeof *board)*rowSize);
+	
 	wipeBoard(board);	// zero out the minesweeper board
 	placeMines(board);	// place mines on board
 	fillValues(board);	// fill adjacent mine values for entire board
 	printBoard(board);	// view board
+	
 }
 
 /*
  * print out current state of board
  */
-void printBoard( char (*board)[columnSize]) {
+void printBoard( square (*board)[columnSize]) {
 	printf("current board:\n");
 	int i, j;
 	for(i = 0; i < rowSize; i++) {
 		for(j = 0; j < columnSize; j++) {
-			printf("[%c]", board[i][j]);
+			printf("[%c]", board[i][j].status);
 		}
 		printf("\n");
 	}
@@ -40,7 +42,7 @@ void printBoard( char (*board)[columnSize]) {
 /*
  * fill the board with randomly placed mines depending on the mine count
  */
-void placeMines( char (*board)[columnSize]) {
+void placeMines( square (*board)[columnSize]) {
 	int r, c, i;
 	for(i=0; i<numMines; i++) {
 		r = rand()%rowSize;
@@ -48,20 +50,23 @@ void placeMines( char (*board)[columnSize]) {
 
 		// if the space is filled,
 		// subtract 1 to correct for number of mines placed
-		if(board [r][c] == 'b') i--;
-
-		board[r][c] = 'b';
+		if(board[r][c].status == 'b' || board[r][c].status == 's')
+			i--;
+		else
+			board[r][c].status = 'b';
 	}
 }
 
 /**
   * reset the board by filling all squares with 'e'
   */
-void wipeBoard( char (*board)[columnSize]) {
+void wipeBoard( square (*board)[columnSize]) {
 	int i,j;
 	for(i = 0; i < rowSize; i++) {
 		for(j = 0; j < columnSize; j++) {
-			board[i][j] = 'e';
+			board[i][j].row = i;
+			board[i][j].column = j;
+			board[i][j].status = 'e';
 		}
 	}
 }
@@ -69,15 +74,15 @@ void wipeBoard( char (*board)[columnSize]) {
 /**
   * fill the inside of the board with values based on adjacent bombs
   */
-void fillValues( char (*board)[columnSize]) {
+void fillValues( square (*board)[columnSize]) {
 	int i, j;
 	neighbor *list;
 	for(i = 0; i < rowSize; i++) {
 		for(j = 0; j < columnSize; j++) {
-			if( board[i][j] != 'b') {
+			if( board[i][j].status != 'b') {
 				list = NULL;
 				list = getNeighbors( board, i, j);
-				board[i][j] = (char) (((int) '0') + getBombCount(list));
+				board[i][j].status = (char) (((int) '0') + getBombCount(list));
 			}
 		}
 	}
@@ -86,7 +91,7 @@ void fillValues( char (*board)[columnSize]) {
 /*
  * return a linked list of the values of neighbors for a given point on the board
  */
-neighbor* getNeighbors( char (*board)[columnSize], int row, int column) {
+neighbor* getNeighbors( square (*board)[columnSize], int row, int column) {
 
 	neighbor *list = NULL;
 	if( row < rowSize-1 && row > 0 && column < columnSize-1 && column > 0) {	// not on edge of board
@@ -173,7 +178,7 @@ int countBombs( neighbor* neighbors, int count) {
 	if( neighbors == NULL) {
 		return count;
 	} else {
-		if( neighbors->value == 'b') {
+		if( neighbors->value.status == 'b') {
 			count++;
 		}
 		return countBombs(neighbors->next, count);
